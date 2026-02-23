@@ -13,15 +13,15 @@ export default function Toast({ message, type = 'success', onClose }: ToastProps
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
-    }, 2500);
+    }, 4000);
 
     return () => clearTimeout(timer);
   }, [onClose]);
 
   const styles = {
-    success: 'bg-green-600',
-    error: 'bg-red-600',
-    info: 'bg-blue-600',
+    success: 'bg-green-600 dark:bg-green-700',
+    error: 'bg-red-600 dark:bg-red-700',
+    info: 'bg-blue-600 dark:bg-blue-700',
   };
 
   const icons = {

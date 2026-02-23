@@ -89,7 +89,6 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data.success && data.suppliers && data.suppliers.length > 0) {
-        // Verify all extracted URNs and get official names from HMRC
         let verifiedCount = 0;
         const verifiedNames: string[] = [];
 
@@ -97,10 +96,9 @@ export default function Dashboard() {
           const verifyRes = await fetch(`/api/verify?urn=${imported.urn}`);
           const verifyData = await verifyRes.json();
 
-          // Use company name from HMRC verification, not from CSV
           const newSupplier: Supplier = {
             urn: verifyData.urn,
-            name: verifyData.name || 'Unknown', // ← ONLY from HMRC
+            name: verifyData.name || 'Unknown',
             status: verifyData.status,
             lastChecked: new Date().toISOString(),
             history: [{ date: new Date().toISOString().split('T')[0], status: verifyData.status }]
@@ -114,7 +112,6 @@ export default function Dashboard() {
           verifiedNames.push(verifyData.name || verifyData.urn);
         }
 
-        // Show success message with HMRC-verified names
         if (verifiedCount === 1) {
           setToastMessage(`Imported 1 supplier: ${verifiedNames[0]}`);
         } else if (verifiedCount <= 3) {
@@ -180,8 +177,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Toast Notification */}
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900">
       {showToast && (
         <Toast
           message={toastMessage}
@@ -190,45 +186,43 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-8 py-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Quick verification and compliance overview</p>
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-8 py-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Quick verification and compliance overview</p>
       </header>
 
       <div className="p-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Total Suppliers</p>
-              <FileText className="w-5 h-5 text-blue-500" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Suppliers</p>
+              <FileText className="w-5 h-5 text-blue-500 dark:text-blue-400" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Approved</p>
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">Approved</p>
+              <CheckCircle className="w-5 h-5 text-green-500 dark:text-green-400" />
             </div>
-            <p className="text-3xl font-bold text-green-600">{stats.approved}</p>
+            <p className="text-3xl font-bold text-green-600 dark:text-green-400">{stats.approved}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Needs Review</p>
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">Needs Review</p>
+              <AlertTriangle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
             </div>
-            <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
+            <p className="text-3xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
           </div>
 
-          <div className="bg-white rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-button hover:shadow-button-hover transition-shadow border border-gray-100 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-gray-600">Last Check</p>
-              <Clock className="w-5 h-5 text-purple-500" />
+              <p className="text-sm text-gray-600 dark:text-gray-400">Last Check</p>
+              <Clock className="w-5 h-5 text-purple-500 dark:text-purple-400" />
             </div>
-            <p className="text-lg font-semibold text-gray-900">
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">
               {stats.lastCheck
                 ? new Date(stats.lastCheck).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
                 : 'No checks yet'
@@ -238,10 +232,9 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Manual Input */}
-          <div className="bg-white rounded-xl shadow-button border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-blue-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-button border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               Quick Verify
             </h2>
             <div className="space-y-3">
@@ -250,13 +243,13 @@ export default function Dashboard() {
                 value={urnInput}
                 onChange={(e) => setUrnInput(e.target.value.toUpperCase())}
                 placeholder="Enter URN (e.g., XJAW00000102990)"
-                className="w-full px-4 text-black py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
+                className="w-full px-4 text-black dark:text-white bg-white dark:bg-gray-700 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
                 onKeyPress={(e) => e.key === 'Enter' && handleVerify()}
               />
               <button
                 onClick={handleVerify}
                 disabled={loading}
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-button hover:shadow-button-hover"
+                className="w-full bg-blue-600 dark:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-button hover:shadow-button-hover"
               >
                 {loading ? (
                   <>
@@ -273,10 +266,9 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* CSV/Excel Upload */}
-          <div className="bg-white rounded-xl shadow-button border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-green-600" />
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-button border border-gray-200 dark:border-gray-700 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <FileSpreadsheet className="w-5 h-5 text-green-600 dark:text-green-400" />
               Bulk Import
             </h2>
 
@@ -286,22 +278,22 @@ export default function Dashboard() {
               onDragOver={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${dragActive
-                ? 'border-green-500 bg-green-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20'
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
             >
               {uploadLoading ? (
                 <div className="space-y-3">
-                  <Loader2 className="w-12 h-12 text-green-600 mx-auto animate-spin" />
-                  <p className="text-sm text-gray-600">Processing file...</p>
+                  <Loader2 className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto animate-spin" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Processing file...</p>
                 </div>
               ) : (
                 <>
-                  <FileSpreadsheet className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 mb-2">
+                  <FileSpreadsheet className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     Drag & drop CSV or Excel here
                   </p>
-                  <p className="text-xs text-gray-400 mb-4">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
                     File must contain an "AWRS" or "URN" column
                   </p>
                   <input
@@ -317,69 +309,59 @@ export default function Dashboard() {
                   />
                   <label
                     htmlFor="file-upload"
-                    className="inline-block bg-green-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 transition-all cursor-pointer shadow-button hover:shadow-button-hover"
+                    className="inline-block bg-green-600 dark:bg-green-700 text-white px-6 py-2 rounded-lg font-medium hover:bg-green-700 dark:hover:bg-green-600 transition-all cursor-pointer shadow-button hover:shadow-button-hover"
                   >
                     Choose File
                   </label>
                 </>
               )}
             </div>
-
-            {/* Commented out for Full Account Feature */}
-            {/*
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-xs text-blue-700">
-                💡 <strong>Full Account:</strong> Upload PDFs and extract AWRS automatically
-              </p>
-            </div>
-            */}
           </div>
         </div>
 
-        {/* Recent Verifications */}
         {suppliers.length > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-button border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Verifications</h2>
-              <p className="text-sm text-gray-500 mt-1">Click on any supplier to view details</p>
+          <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-button border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Verifications</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Click on any supplier to view details</p>
             </div>
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
               {suppliers.slice(0, 5).map((supplier) => (
                 <button
                   key={supplier.urn}
                   onClick={() => router.push(`/dashboard/suppliers/${supplier.urn}`)}
-                  className="w-full p-4 hover:bg-blue-50 transition-all flex items-center justify-between cursor-pointer group shadow-sm hover:shadow-button text-left"
+                  className="w-full p-4 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all flex items-center justify-between cursor-pointer group shadow-sm hover:shadow-button text-left"
                 >
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                    <p className="font-medium text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {supplier.name}
                     </p>
-                    <p className="text-sm text-gray-500 font-mono mt-1">{supplier.urn}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-mono mt-1">{supplier.urn}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right mr-2">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${supplier.status === 'Approved'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                         }`}>
                         <CheckCircle className="w-3.5 h-3.5" />
                         {supplier.status}
                       </span>
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         {new Date(supplier.lastChecked).toLocaleDateString('en-GB')}
                       </p>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
+                    <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                   </div>
                 </button>
               ))}
             </div>
 
             {suppliers.length > 5 && (
-              <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => router.push('/dashboard/suppliers')}
-                  className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                  className="w-full text-center text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                 >
                   View all {suppliers.length} suppliers →
                 </button>
