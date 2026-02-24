@@ -13,6 +13,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import Toast from '../../components/Toast';
+import { trackEvent } from '../../lib/analytics';
 
 interface Supplier {
   urn: string;
@@ -34,6 +35,7 @@ export default function Dashboard() {
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
 
   useEffect(() => {
+    trackEvent('page_viewed', { page: 'dashboard' });
     const savedSuppliers = localStorage.getItem('awrs_suppliers');
     if (savedSuppliers) {
       setSuppliers(JSON.parse(savedSuppliers));
@@ -47,6 +49,11 @@ export default function Dashboard() {
     try {
       const res = await fetch(`/api/verify?urn=${urnInput.trim()}`);
       const data = await res.json();
+
+      trackEvent('urn_verified', {
+        status: data.status,
+        urn_format: data.urn ? 'valid' : 'invalid',
+      });
 
       const newSupplier: Supplier = {
         urn: data.urn,
@@ -66,6 +73,11 @@ export default function Dashboard() {
       setShowToast(true);
     } catch (error) {
       console.error('Verification failed:', error);
+
+      trackEvent('verification_failed', {
+        error: 'api_error'
+      });
+
       setToastMessage('Verification failed. Please try again.');
       setToastType('error');
       setShowToast(true);
@@ -112,6 +124,11 @@ export default function Dashboard() {
           verifiedNames.push(verifyData.name || verifyData.urn);
         }
 
+        trackEvent('bulk_import_completed', {
+          count: verifiedCount,
+          file_type: file.name.endsWith('.csv') ? 'csv' : 'excel'
+        });
+
         if (verifiedCount === 1) {
           setToastMessage(`Imported 1 supplier: ${verifiedNames[0]}`);
         } else if (verifiedCount <= 3) {
@@ -132,6 +149,11 @@ export default function Dashboard() {
       }
     } catch (error: any) {
       console.error('Import failed:', error);
+
+      trackEvent('bulk_import_failed', {
+        error: error.message
+      });
+
       setToastMessage(`Failed to import: ${error.message}`);
       setToastType('error');
       setShowToast(true);

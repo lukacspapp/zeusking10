@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { generatePDF, generateBulkPDF } from '../../../../lib/pdf-generator';
 import Toast from '../../../../components/Toast';
+import { trackEvent } from '../../../../lib/analytics';
 
 interface Supplier {
   urn: string;
@@ -43,6 +44,7 @@ export default function SupplierDetailPage() {
   const MAX_SELECTION = 10;
 
   useEffect(() => {
+    trackEvent('page_viewed', { page: 'supplier_detail' });
     const savedSuppliers = localStorage.getItem('awrs_suppliers');
     if (savedSuppliers) {
       const suppliers: Supplier[] = JSON.parse(savedSuppliers);
@@ -66,6 +68,11 @@ export default function SupplierDetailPage() {
     try {
       const res = await fetch(`/api/verify?urn=${supplier.urn}`);
       const data = await res.json();
+
+      trackEvent('supplier_rechecked', {
+        status: data.status,
+        previous_status: supplier.status
+      });
 
       const updatedSupplier: Supplier = {
         ...supplier,
@@ -96,6 +103,11 @@ export default function SupplierDetailPage() {
 
   const handleSaveFrequency = () => {
     if (!supplier) return;
+
+    trackEvent('frequency_updated', {
+      frequency: frequency,
+      previous_frequency: supplier.frequency || 'on-demand'
+    });
 
     const savedSuppliers = localStorage.getItem('awrs_suppliers');
     if (savedSuppliers) {
@@ -135,6 +147,12 @@ export default function SupplierDetailPage() {
   const handleDownloadSingleHistory = (index: number) => {
     if (!supplier || !supplier.history) return;
 
+    trackEvent('certificate_downloaded', {
+      type: 'single',
+      supplier_has_history: (supplier.history?.length || 0) > 1
+    });
+
+
     const historyItem = supplier.history[index];
     const supplierSnapshot: Supplier = {
       ...supplier,
@@ -147,6 +165,12 @@ export default function SupplierDetailPage() {
 
   const handleDownloadSelectedHistory = async () => {
     if (!supplier || !supplier.history || selectedHistory.length === 0) return;
+
+    trackEvent('certificate_downloaded', {
+      type: 'bulk',
+      count: selectedHistory.length
+    });
+
 
     setDownloadingHistory(true);
     try {
@@ -207,8 +231,8 @@ export default function SupplierDetailPage() {
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Current Status</h2>
               <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm ${supplier.status === 'Approved'
-                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                 }`}>
                 <CheckCircle className="w-5 h-5" />
                 {supplier.status}
@@ -369,8 +393,8 @@ export default function SupplierDetailPage() {
                   <div
                     key={i}
                     className={`p-4 flex items-center gap-4 transition-colors ${isSelected
-                        ? 'bg-blue-50 dark:bg-blue-900/20'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      ? 'bg-blue-50 dark:bg-blue-900/20'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}
                   >
                     <input
@@ -385,15 +409,15 @@ export default function SupplierDetailPage() {
                     <Clock className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0" />
 
                     <span className={`text-sm flex-1 ${!canSelect && !isSelected
-                        ? 'text-gray-400 dark:text-gray-600'
-                        : 'text-gray-600 dark:text-gray-400'
+                      ? 'text-gray-400 dark:text-gray-600'
+                      : 'text-gray-600 dark:text-gray-400'
                       }`}>
                       {check.date}
                     </span>
 
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${check.status === 'Approved'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                      : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                       }`}>
                       {check.status === 'Approved' ? '✅' : '❌'} {check.status}
                     </span>

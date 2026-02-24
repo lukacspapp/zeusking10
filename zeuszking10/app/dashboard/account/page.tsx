@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { User, Mail, Shield, Loader2, CheckCircle, Moon, Sun } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { trackEvent } from '../../../lib/analytics';
 
 export default function AccountPage() {
   const [customer, setCustomer] = useState<any>(null);
@@ -11,6 +12,8 @@ export default function AccountPage() {
   const { darkMode, toggleDarkMode } = useDarkMode();
 
   useEffect(() => {
+    trackEvent('page_viewed', { page: 'account' });
+
     const stored = localStorage.getItem('awrs_customer');
     if (stored) {
       setCustomer(JSON.parse(stored));
@@ -25,6 +28,10 @@ export default function AccountPage() {
       const savedSuppliers = localStorage.getItem('awrs_suppliers');
       const suppliers = savedSuppliers ? JSON.parse(savedSuppliers) : [];
 
+      trackEvent('full_account_requested', {
+        supplier_count: suppliers.length
+      });
+
       const res = await fetch('/api/request-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,10 +43,18 @@ export default function AccountPage() {
       });
 
       if (res.ok) {
+        trackEvent('full_account_request_sent', {
+          success: true,
+          supplier_count: suppliers.length
+        })
         setRequestSent(true);
         setTimeout(() => setRequestSent(false), 5000);
       }
     } catch (error) {
+      trackEvent('full_account_request_sent', {
+        success: false,
+        error: 'api_error'
+      });
       console.error('Request failed:', error);
     } finally {
       setRequestLoading(false);

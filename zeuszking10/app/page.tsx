@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Moon, Sun } from 'lucide-react';
 import { useDarkMode } from '@/hooks/useDarkMode';
+import { trackEvent } from '../lib/analytics';
 
 const CUSTOMER_THEMES = {
   'seckford123': { name: 'Seckford Wines', color: '#1e40af' },
@@ -29,12 +30,21 @@ export default function LoginPage() {
     const theme = CUSTOMER_THEMES[password as keyof typeof CUSTOMER_THEMES];
 
     if (theme) {
+      trackEvent('demo_accessed', {
+        customer_type: password,
+      });
+
       localStorage.setItem('awrs_customer', JSON.stringify({ password, ...theme }));
       router.push('/dashboard');
     } else {
+      trackEvent('login_failed', {
+        reason: 'invalid_code'
+      });
+
       setError('Invalid access code');
     }
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 transition-colors duration-200">

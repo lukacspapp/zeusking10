@@ -12,6 +12,7 @@ import {
   X,
   Info
 } from 'lucide-react';
+import { trackEvent } from '../../../lib/analytics';
 
 interface Supplier {
   urn: string;
@@ -31,6 +32,8 @@ export default function SuppliersPage() {
   const [showInfoBanner, setShowInfoBanner] = useState(true);
 
   useEffect(() => {
+    trackEvent('page_viewed', { page: 'suppliers' });
+
     const savedSuppliers = localStorage.getItem('awrs_suppliers');
     if (savedSuppliers) {
       setSuppliers(JSON.parse(savedSuppliers));
@@ -69,6 +72,10 @@ export default function SuppliersPage() {
   };
 
   const confirmDelete = () => {
+    trackEvent('suppliers_deleted', {
+      count: selected.length
+    });
+
     const updated = suppliers.filter(s => !selected.includes(s.urn));
     setSuppliers(updated);
     localStorage.setItem('awrs_suppliers', JSON.stringify(updated));
