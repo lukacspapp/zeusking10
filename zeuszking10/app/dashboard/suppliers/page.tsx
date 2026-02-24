@@ -171,11 +171,14 @@ export default function SuppliersPage() {
         {/* Suppliers Table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-button border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Table Header with Instructions */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium">💡 Tip:</span> Select suppliers using checkboxes to delete multiple at once
-            </p>
-          </div>
+          {suppliers.length > 0 && (
+            <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-medium">💡 Tip:</span> Select suppliers using checkboxes to delete multiple at once
+              </p>
+            </div>
+          )}
+
 
           {filteredSuppliers.length === 0 ? (
             <div className="p-12 text-center">
