@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { Home, FileText, User, LogOut, Shield, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useDarkMode } from '../../hooks/useDarkMode';
 
 interface CustomerTheme {
   name: string;
@@ -18,6 +19,8 @@ export default function DashboardLayout({
   const router = useRouter();
   const [customer, setCustomer] = useState<CustomerTheme | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useDarkMode();
 
   useEffect(() => {
     const stored = localStorage.getItem('awrs_customer');
