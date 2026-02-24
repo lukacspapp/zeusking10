@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, FileText, User, LogOut, Shield } from 'lucide-react';
+import { Home, FileText, User, LogOut, Shield, Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface CustomerTheme {
@@ -17,6 +17,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [customer, setCustomer] = useState<CustomerTheme | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('awrs_customer');
@@ -26,6 +27,21 @@ export default function DashboardLayout({
     }
     setCustomer(JSON.parse(stored));
   }, [router]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [mobileMenuOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem('awrs_customer');
@@ -42,11 +58,64 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900 flex transition-colors duration-200">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-lg transition-colors duration-200">
-        {/* Logo/Brand */}
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-3 mb-2">
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-4 z-40 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg" style={{ backgroundColor: `${customer.color}20` }}>
+            <Shield className="w-5 h-5" style={{ color: customer.color }} />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900 dark:text-white text-sm">{customer.name}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Compliance Portal</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? (
+            <X className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          )}
+        </button>
+      </header>
+
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 dark:bg-black/70 z-40 transition-opacity"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Desktop & Mobile */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50
+          w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
+          flex flex-col shadow-lg transition-all duration-300 ease-in-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Logo/Brand - Desktop Only - NO BORDER */}
+        <div className="hidden lg:block px-8 py-6 mb-2">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg" style={{ backgroundColor: `${customer.color}20` }}>
+              <Shield className="w-6 h-6" style={{ color: customer.color }} />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900 dark:text-white text-base">{customer.name}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Compliance Portal</p>
+            </div>
+          </div>
+        </div>
+
+
+        {/* Mobile Header Inside Sidebar */}
+        <div className="lg:hidden p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg" style={{ backgroundColor: `${customer.color}20` }}>
               <Shield className="w-6 h-6" style={{ color: customer.color }} />
             </div>
@@ -55,19 +124,28 @@ export default function DashboardLayout({
               <p className="text-xs text-gray-500 dark:text-gray-400">Compliance Portal</p>
             </div>
           </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
             return (
               <button
                 key={item.path}
-                onClick={() => router.push(item.path)}
+                onClick={() => {
+                  router.push(item.path);
+                  setMobileMenuOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-medium text-sm shadow-sm hover:shadow-button ${isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-button'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-button'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -90,7 +168,7 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
         {children}
       </main>
     </div>

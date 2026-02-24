@@ -87,7 +87,7 @@ export default function AccountPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600 dark:text-gray-400">Access Level</label>
-              <span className="inline-block mt-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-sm font-medium">
+              <span className="inline-block mt-2 px-2 ml-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-sm font-semibold">
                 Limited Access
               </span>
             </div>
