@@ -294,7 +294,7 @@ export default function Dashboard() {
                     Drag & drop CSV or Excel here
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-                    File must contain an "AWRS" or "URN" column
+                    File must contain an {'"'}AWRS{'"'} or {'"'}URN{'"'} column
                   </p>
                   <input
                     type="file"

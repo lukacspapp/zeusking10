@@ -141,7 +141,7 @@ export default function SuppliersPage() {
                   <li>• <strong>Business closure</strong> - Supplier no longer trading</li>
                 </ul>
                 <p className="text-xs text-blue-700 dark:text-blue-300 italic">
-                  Note: HMRC recommends keeping records for 5 years. You'll be reminded before deletion.
+                  Note: HMRC recommends keeping records for 5 years. You{`'`}ll be reminded before deletion.
                 </p>
               </div>
               <button
@@ -214,8 +214,8 @@ export default function SuppliersPage() {
                       <tr
                         key={supplier.urn}
                         className={`transition-colors ${isSelected
-                            ? 'bg-blue-50 dark:bg-blue-900/20'
-                            : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                          ? 'bg-blue-50 dark:bg-blue-900/20'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                           }`}
                       >
                         <td className="px-6 py-4">
@@ -243,8 +243,8 @@ export default function SuppliersPage() {
                         </td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${supplier.status === 'Approved'
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                             }`}>
                             <CheckCircle className="w-3.5 h-3.5" />
                             {supplier.status}
