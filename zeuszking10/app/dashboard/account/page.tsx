@@ -121,6 +121,7 @@ export default function AccountPage() {
             <p className="text-sm font-semibold mb-2">Full Account Includes:</p>
             <ul className="text-sm space-y-2 text-blue-100 dark:text-blue-200">
               <li>✅ Unlimited supplier verifications</li>
+              <li>✅ Permanent records kept for 5 years</li>
               <li>✅ Automated daily/weekly/monthly checks</li>
               <li>✅ Email alerts for status changes</li>
               <li>✅ Bulk PDF upload & extraction</li>

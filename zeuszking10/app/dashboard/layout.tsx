@@ -64,15 +64,20 @@ export default function DashboardLayout({
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          aria-label="Toggle menu"
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {mobileMenuOpen ? (
+            <X className="w-6 h-6 text-gray-900 dark:text-gray-100" />
+          ) : (
+            <Menu className="w-6 h-6 text-gray-900 dark:text-gray-100" />
+          )}
         </button>
       </header>
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 dark:bg-black/70 z-40"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}

@@ -101,43 +101,62 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data.success && data.suppliers && data.suppliers.length > 0) {
-        let verifiedCount = 0;
+        // ✅ FIX: Collect all new suppliers first, then update once
+        const newSuppliers: Supplier[] = [];
         const verifiedNames: string[] = [];
 
         for (const imported of data.suppliers) {
-          const verifyRes = await fetch(`/api/verify?urn=${imported.urn}`);
-          const verifyData = await verifyRes.json();
+          try {
+            const verifyRes = await fetch(`/api/verify?urn=${imported.urn}`);
+            const verifyData = await verifyRes.json();
 
-          const newSupplier: Supplier = {
-            urn: verifyData.urn,
-            name: verifyData.name || 'Unknown',
-            status: verifyData.status,
-            lastChecked: new Date().toISOString(),
-            history: [{ date: new Date().toISOString().split('T')[0], status: verifyData.status }]
-          };
+            const newSupplier: Supplier = {
+              urn: verifyData.urn,
+              name: verifyData.name || imported.name || 'Unknown',
+              status: verifyData.status,
+              lastChecked: new Date().toISOString(),
+              history: [{ date: new Date().toISOString().split('T')[0], status: verifyData.status }]
+            };
 
-          const updated = [newSupplier, ...suppliers.filter(s => s.urn !== verifyData.urn)];
-          setSuppliers(updated);
-          localStorage.setItem('awrs_suppliers', JSON.stringify(updated));
-
-          verifiedCount++;
-          verifiedNames.push(verifyData.name || verifyData.urn);
+            newSuppliers.push(newSupplier);
+            verifiedNames.push(verifyData.name || verifyData.urn);
+          } catch (error) {
+            console.error(`Failed to verify ${imported.urn}:`, error);
+            // Continue with next supplier even if one fails
+          }
         }
 
-        trackEvent('bulk_import_completed', {
-          count: verifiedCount,
-          file_type: file.name.endsWith('.csv') ? 'csv' : 'excel'
-        });
+        // ✅ FIX: Update state ONCE with all new suppliers
+        if (newSuppliers.length > 0) {
+          setSuppliers(prev => {
+            // Remove duplicates and add new ones at the top
+            const existingUrns = new Set(newSuppliers.map(s => s.urn));
+            const filtered = prev.filter(s => !existingUrns.has(s.urn));
+            const updated = [...newSuppliers, ...filtered];
+            localStorage.setItem('awrs_suppliers', JSON.stringify(updated));
+            return updated;
+          });
 
-        if (verifiedCount === 1) {
-          setToastMessage(`Imported 1 supplier: ${verifiedNames[0]}`);
-        } else if (verifiedCount <= 3) {
-          setToastMessage(`Imported ${verifiedCount} suppliers: ${verifiedNames.join(', ')}`);
+          trackEvent('bulk_import_completed', {
+            count: newSuppliers.length,
+            file_type: file.name.endsWith('.csv') ? 'csv' : 'excel'
+          });
+
+          // Better toast messages
+          if (newSuppliers.length === 1) {
+            setToastMessage(`Imported 1 supplier: ${verifiedNames[0]}`);
+          } else if (newSuppliers.length <= 3) {
+            setToastMessage(`Imported ${newSuppliers.length} suppliers: ${verifiedNames.join(', ')}`);
+          } else {
+            setToastMessage(`Imported ${newSuppliers.length} suppliers: ${verifiedNames.slice(0, 2).join(', ')} and ${newSuppliers.length - 2} more`);
+          }
+          setToastType('success');
+          setShowToast(true);
         } else {
-          setToastMessage(`Imported ${verifiedCount} suppliers: ${verifiedNames.slice(0, 2).join(', ')} and ${verifiedCount - 2} more`);
+          setToastMessage('No suppliers could be verified');
+          setToastType('error');
+          setShowToast(true);
         }
-        setToastType('success');
-        setShowToast(true);
       } else if (data.error) {
         setToastMessage(data.error);
         setToastType('error');
