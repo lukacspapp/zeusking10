@@ -325,7 +325,7 @@ export default function SuppliersPage() {
             {/* Clarification */}
             <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 mb-6">
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                <strong>You can still delete</strong> if you're certain you no longer need these records (e.g., duplicates, errors, or records older than 5 years).
+                <strong>You can still delete</strong> if you&apos;re certain you no longer need these records (e.g., duplicates, errors, or records older than 5 years).
               </p>
             </div>
 
