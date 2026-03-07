@@ -6,10 +6,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Clock,
-  Upload,
-  FileText,
   Loader2,
   ChevronRight,
+  FileText,
   FileSpreadsheet
 } from 'lucide-react';
 import Toast from '../../components/Toast';
@@ -19,8 +18,54 @@ interface Supplier {
   urn: string;
   name: string;
   status: string;
+
+  // IMPORTANT: this should remain an ISO timestamp string (with time)
+  // e.g. "2026-03-03T18:46:12.123Z"
   lastChecked: string;
-  history?: { date: string; status: string }[];
+
+  // ✅ NEW: HMRC-provided search date/time (best source of truth for the check)
+  hmrcSearchDateRaw?: string; // e.g. "3 March 2026 6:46pm"
+  hmrcSearchDateIso?: string; // e.g. "2026-03-03T18:46:00" (local UK time string from API)
+
+  // Optional extras you may want later (PDF/audit)
+  rawStatus?: string;
+  hmrcUrl?: string;
+
+  history?: { date: string; status: string; hmrcSearchDateRaw?: string }[];
+}
+
+type VerifyResponse = {
+  urn: string;
+  name?: string;
+  status: string;
+  raw_status?: string;
+  checked_at?: string;
+
+  // ✅ from the updated /api/verify route
+  hmrc_url?: string;
+  hmrc_search_date_raw?: string;
+  hmrc_search_date_iso?: string;
+};
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+// If we have HMRC time, use it; else fallback to checked_at; else now.
+function pickCheckTimestamp(data: VerifyResponse) {
+  // hmrc_search_date_iso is a "local UK time" ISO-like string without timezone ("2026-03-03T18:46:00")
+  // If you want to preserve it, store it separately. lastChecked should stay a real ISO timestamp.
+  return data.checked_at || nowIso();
+}
+
+// For history date label: use HMRC date if present, else today's date.
+function pickHistoryDate(data: VerifyResponse) {
+  if (data.hmrc_search_date_raw) {
+    // "3 March 2026 6:46pm" -> store date only in history for grouping
+    // simplest: keep today's ISO date; you can improve parsing later
+    return nowIso().split('T')[0];
+  }
+  return nowIso().split('T')[0];
 }
 
 export default function Dashboard() {
@@ -47,23 +92,42 @@ export default function Dashboard() {
 
     setLoading(true);
     try {
-      const res = await fetch(`/api/verify?urn=${urnInput.trim()}`);
-      const data = await res.json();
+      const res = await fetch(`/api/verify?urn=${encodeURIComponent(urnInput.trim())}`);
+      const data: VerifyResponse = await res.json();
 
       trackEvent('urn_verified', {
         status: data.status,
         urn_format: data.urn ? 'valid' : 'invalid',
       });
 
+      // ✅ Use API-provided checked_at as your internal timestamp (keeps real time)
+      // ✅ ALSO store HMRC "Search date ..." so your PDF can show the exact HMRC time
       const newSupplier: Supplier = {
         urn: data.urn,
         name: data.name || 'Unknown',
         status: data.status,
-        lastChecked: new Date().toISOString(),
-        history: [{ date: new Date().toISOString().split('T')[0], status: data.status }]
+
+        // IMPORTANT: keep as ISO timestamp, do NOT convert to date-only
+        lastChecked: pickCheckTimestamp(data),
+
+        // ✅ Pass through HMRC returned time fields
+        hmrcSearchDateRaw: data.hmrc_search_date_raw || undefined,
+        hmrcSearchDateIso: data.hmrc_search_date_iso || undefined,
+
+        // Optional extras
+        rawStatus: data.raw_status || undefined,
+        hmrcUrl: data.hmrc_url || undefined,
+
+        history: [
+          {
+            date: pickHistoryDate(data),
+            status: data.status,
+            hmrcSearchDateRaw: data.hmrc_search_date_raw || undefined,
+          },
+        ],
       };
 
-      const updated = [newSupplier, ...suppliers.filter(s => s.urn !== data.urn)];
+      const updated = [newSupplier, ...suppliers.filter((s) => s.urn !== data.urn)];
       setSuppliers(updated);
       localStorage.setItem('awrs_suppliers', JSON.stringify(updated));
       setUrnInput('');
@@ -75,7 +139,7 @@ export default function Dashboard() {
       console.error('Verification failed:', error);
 
       trackEvent('verification_failed', {
-        error: 'api_error'
+        error: 'api_error',
       });
 
       setToastMessage('Verification failed. Please try again.');
@@ -101,37 +165,49 @@ export default function Dashboard() {
       const data = await res.json();
 
       if (data.success && data.suppliers && data.suppliers.length > 0) {
-        // ✅ FIX: Collect all new suppliers first, then update once
         const newSuppliers: Supplier[] = [];
         const verifiedNames: string[] = [];
 
         for (const imported of data.suppliers) {
           try {
-            const verifyRes = await fetch(`/api/verify?urn=${imported.urn}`);
-            const verifyData = await verifyRes.json();
+            const verifyRes = await fetch(`/api/verify?urn=${encodeURIComponent(imported.urn)}`);
+            const verifyData: VerifyResponse = await verifyRes.json();
 
             const newSupplier: Supplier = {
               urn: verifyData.urn,
               name: verifyData.name || imported.name || 'Unknown',
               status: verifyData.status,
-              lastChecked: new Date().toISOString(),
-              history: [{ date: new Date().toISOString().split('T')[0], status: verifyData.status }]
+
+              // ✅ keep ISO from API
+              lastChecked: pickCheckTimestamp(verifyData),
+
+              // ✅ HMRC time fields
+              hmrcSearchDateRaw: verifyData.hmrc_search_date_raw || undefined,
+              hmrcSearchDateIso: verifyData.hmrc_search_date_iso || undefined,
+
+              rawStatus: verifyData.raw_status || undefined,
+              hmrcUrl: verifyData.hmrc_url || undefined,
+
+              history: [
+                {
+                  date: pickHistoryDate(verifyData),
+                  status: verifyData.status,
+                  hmrcSearchDateRaw: verifyData.hmrc_search_date_raw || undefined,
+                },
+              ],
             };
 
             newSuppliers.push(newSupplier);
             verifiedNames.push(verifyData.name || verifyData.urn);
           } catch (error) {
             console.error(`Failed to verify ${imported.urn}:`, error);
-            // Continue with next supplier even if one fails
           }
         }
 
-        // ✅ FIX: Update state ONCE with all new suppliers
         if (newSuppliers.length > 0) {
-          setSuppliers(prev => {
-            // Remove duplicates and add new ones at the top
-            const existingUrns = new Set(newSuppliers.map(s => s.urn));
-            const filtered = prev.filter(s => !existingUrns.has(s.urn));
+          setSuppliers((prev) => {
+            const existingUrns = new Set(newSuppliers.map((s) => s.urn));
+            const filtered = prev.filter((s) => !existingUrns.has(s.urn));
             const updated = [...newSuppliers, ...filtered];
             localStorage.setItem('awrs_suppliers', JSON.stringify(updated));
             return updated;
@@ -139,16 +215,19 @@ export default function Dashboard() {
 
           trackEvent('bulk_import_completed', {
             count: newSuppliers.length,
-            file_type: file.name.endsWith('.csv') ? 'csv' : 'excel'
+            file_type: file.name.endsWith('.csv') ? 'csv' : 'excel',
           });
 
-          // Better toast messages
           if (newSuppliers.length === 1) {
             setToastMessage(`Imported 1 supplier: ${verifiedNames[0]}`);
           } else if (newSuppliers.length <= 3) {
             setToastMessage(`Imported ${newSuppliers.length} suppliers: ${verifiedNames.join(', ')}`);
           } else {
-            setToastMessage(`Imported ${newSuppliers.length} suppliers: ${verifiedNames.slice(0, 2).join(', ')} and ${newSuppliers.length - 2} more`);
+            setToastMessage(
+              `Imported ${newSuppliers.length} suppliers: ${verifiedNames
+                .slice(0, 2)
+                .join(', ')} and ${newSuppliers.length - 2} more`
+            );
           }
           setToastType('success');
           setShowToast(true);
@@ -170,7 +249,7 @@ export default function Dashboard() {
       console.error('Import failed:', error);
 
       trackEvent('bulk_import_failed', {
-        error: error.message
+        error: error.message,
       });
 
       setToastMessage(`Failed to import: ${error.message}`);
@@ -184,9 +263,9 @@ export default function Dashboard() {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
@@ -212,20 +291,14 @@ export default function Dashboard() {
 
   const stats = {
     total: suppliers.length,
-    approved: suppliers.filter(s => s.status === 'Approved').length,
-    pending: suppliers.filter(s => s.status !== 'Approved').length,
+    approved: suppliers.filter((s) => s.status === 'Approved').length,
+    pending: suppliers.filter((s) => s.status !== 'Approved').length,
     lastCheck: suppliers[0]?.lastChecked || null,
   };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-gray-900">
-      {showToast && (
-        <Toast
-          message={toastMessage}
-          type={toastType}
-          onClose={() => setShowToast(false)}
-        />
-      )}
+      {showToast && <Toast message={toastMessage} type={toastType} onClose={() => setShowToast(false)} />}
 
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-8 py-6">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
@@ -266,8 +339,7 @@ export default function Dashboard() {
             <p className="text-lg font-semibold text-gray-900 dark:text-white">
               {stats.lastCheck
                 ? new Date(stats.lastCheck).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-                : 'No checks yet'
-              }
+                : 'No checks yet'}
             </p>
           </div>
         </div>
@@ -285,7 +357,7 @@ export default function Dashboard() {
                 onChange={(e) => setUrnInput(e.target.value.toUpperCase())}
                 placeholder="Enter URN (e.g., XJAW00000102990)"
                 className="w-full px-4 text-black dark:text-white bg-white dark:bg-gray-700 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
-                onKeyPress={(e) => e.key === 'Enter' && handleVerify()}
+                onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
               />
               <button
                 onClick={handleVerify}
@@ -319,8 +391,8 @@ export default function Dashboard() {
               onDragOver={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-lg p-8 text-center transition-all ${dragActive
-                ? 'border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20'
-                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+                  ? 'border-green-500 dark:border-green-400 bg-green-50 dark:bg-green-900/20'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
             >
               {uploadLoading ? (
@@ -331,9 +403,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <FileSpreadsheet className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Drag & drop CSV or Excel here
-                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Drag & drop CSV or Excel here</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
                     File must contain an {'"'}AWRS{'"'} or {'"'}URN{'"'} column
                   </p>
@@ -381,10 +451,12 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right mr-2">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${supplier.status === 'Approved'
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                        : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                        }`}>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${supplier.status === 'Approved'
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                          }`}
+                      >
                         <CheckCircle className="w-3.5 h-3.5" />
                         {supplier.status}
                       </span>
