@@ -6,12 +6,10 @@ export function useDarkMode() {
   const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
-    // Check localStorage on mount
     const stored = localStorage.getItem('darkMode');
     const isDark = stored === 'true';
     setDarkMode(isDark);
 
-    // Apply to document
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
